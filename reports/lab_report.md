@@ -163,6 +163,15 @@ The graph is compiled with a checkpointer and every run uses a per-scenario `thr
 - **Evidence**: Evaluator gates retry loop without regression on baseline error scenarios.
 - **Limitations**: Adds LLM latency and token cost when enabled; heuristic is default fast-path.
 
+### Extension 6: Streamlit UI with Dynamic Mermaid Simulation
+- **Baseline**: Scenario simulation runs headlessly in CLI without real-time UI visualization.
+- **Changes**: Created `streamlit_app.py` allowing users to select/input tickets, review proposed
+  actions, trigger interactive HITL approval/rejection, and view real-time dynamic node
+  highlighting on an embedded Mermaid diagram without exposing API credentials.
+- **Verification Method**: Run `streamlit run streamlit_app.py` / `make ui`.
+- **Evidence**: App available in `streamlit_app.py` with responsive dark-theme Mermaid rendering.
+- **Limitations**: Requires local browser session for user interaction.
+
 ## 8. Improvement plan
 
 - Productionize the mock tool into real API calls (orders, refunds) with proper

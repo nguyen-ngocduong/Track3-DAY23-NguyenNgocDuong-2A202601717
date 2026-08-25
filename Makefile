@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck run-scenarios grade-local clean
+.PHONY: install test lint typecheck run-scenarios grade-local ui clean
 
 install:
 	pip install -e '.[dev]'
@@ -17,6 +17,9 @@ run-scenarios:
 
 grade-local:
 	python -m langgraph_agent_lab.cli validate-metrics --metrics outputs/metrics.json
+
+ui:
+	streamlit run streamlit_app.py
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov dist build *.egg-info outputs/*.json
