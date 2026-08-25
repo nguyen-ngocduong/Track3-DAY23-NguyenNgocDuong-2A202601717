@@ -117,16 +117,51 @@ The graph is compiled with a checkpointer and every run uses a per-scenario `thr
 
 ## 7. Extension work
 
-- **SQLite persistence**: `build_checkpointer("sqlite")` uses `SqliteSaver(conn=...)`
-  with WAL mode; the verified demo database is `outputs/checkpoints.db` and contains
-  checkpoint history for `thread-sqlite_demo`.
-- **Real HITL (interrupt/resume)**: `approval_node` calls `interrupt()` when
-  `LANGGRAPH_INTERRUPT=true`; the graph pauses and is resumed via `Command(resume=...)`.
-- **LLM-as-Judge**: `evaluate_node` uses a second structured-output LLM call to score
-  whether a tool result semantically resolves the query (heuristic fallback if the LLM
-  is unavailable).
-- **Graph diagram**: `graph.get_graph().draw_mermaid()` output is saved to
-  `outputs/graph_diagram.mmd`.
+### Extension 1: Real HITL Interrupt & Resume (`interrupt()`)
+- **Baseline**: Default workflow uses offline mock approval (`approved=True`) without pausing.
+- **Changes**: In `approval_node`, when `LANGGRAPH_INTERRUPT=true`, the node calls
+  `interrupt()` with ticket info. The graph pauses and state is saved to the checkpointer.
+  It is resumed via `Command(resume={"approved": True/False, ...})`.
+- **Verification Method**: Unit tests `test_hitl_interrupt_and_resume_approved` and
+  `test_hitl_interrupt_and_resume_rejected` in `tests/test_extensions.py`.
+- **Evidence**: Test assertions confirm `current_state.next == ("approval",)` during pause,
+  followed by resumption into `tool` (if approved) or `clarify` (if rejected).
+- **Limitations**: Requires persistent checkpointer and interactive caller for
+  `Command(resume=...)`.
+
+### Extension 2: SQLite Durable Persistence & Crash Recovery
+- **Baseline**: In-memory storage (`MemorySaver`) is transient; state is lost on process restart.
+- **Changes**: `build_checkpointer("sqlite")` initializes `SqliteSaver` with WAL mode
+  (`PRAGMA journal_mode=WAL;`).
+- **Verification Method**: Unit test `test_sqlite_persistence_across_instances` runs on Graph 1,
+  deletes instance 1, and instantiates Graph 2 with the same DB file to query state.
+- **Evidence**: State and complete checkpoint history survive across distinct instances.
+  Sample database preserved in `outputs/checkpoints.db`.
+- **Limitations**: Single-file database concurrency is limited compared to distributed PostgreSQL.
+
+### Extension 3: Time Travel & State History Inspection
+- **Baseline**: Standard graph execution only provides the terminal state.
+- **Changes**: Using `graph.get_state_history({"configurable": {"thread_id": ...}}),`
+  full historical checkpoint lineage is accessible.
+- **Verification Method**: Unit test `test_time_travel_state_history` validates chronological
+  checkpoints across node transitions (`intake` -> `classify` -> `tool` -> `evaluate` -> `answer`).
+- **Evidence**: Verified in unit tests; intermediate states can be audited, replayed, or forked.
+- **Limitations**: Branching overwrites subsequent states unless given a new thread ID.
+
+### Extension 4: Mermaid Graph Diagram Export
+- **Baseline**: Workflow architecture exists only as Python code definitions.
+- **Changes**: Exported compiled graph topology via `graph.get_graph().draw_mermaid()`.
+- **Verification Method**: Unit test `test_mermaid_export` validates all 11 nodes, START, and END.
+- **Evidence**: Diagram saved in `outputs/graph_diagram.mmd` and matches target design.
+- **Limitations**: Represents static node/edge connectivity, not dynamic execution path.
+
+### Extension 5: LLM-as-Judge Evaluator with Deterministic Fallback
+- **Baseline**: Tool results are evaluated solely via substring checking (`"ERROR"` in text).
+- **Changes**: `evaluate_node` supports structured LLM judge (`ToolQualityJudge`) to score
+  semantic resolution of queries, guarded by deterministic check and fallback.
+- **Verification Method**: Unit test `test_llm_judge_evaluator_fallback`.
+- **Evidence**: Evaluator gates retry loop without regression on baseline error scenarios.
+- **Limitations**: Adds LLM latency and token cost when enabled; heuristic is default fast-path.
 
 ## 8. Improvement plan
 
