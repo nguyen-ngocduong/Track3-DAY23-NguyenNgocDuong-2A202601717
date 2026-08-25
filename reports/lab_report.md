@@ -2,7 +2,7 @@
 
 ## 1. Thông tin sinh viên
 
-- **Họ và tên**: Nguyen Ngoc Duong
+- **Họ và tên**: Nguyễn Ngọc Dương
 - **Mã số sinh viên (Student ID)**: 2A202601717
 - **Ngày hoàn thành**: 2026-08-25
 
@@ -12,13 +12,34 @@ Quy trình làm việc được thiết kế dưới dạng một đồ thị tr
 **11 nodes** và **4 conditional edges** điều hướng luồng:
 
 ```text
-[START] ➔ [intake] ➔ [classify] ──(route_after_classify)──>
-  simple       ➔ [answer] ➔ [finalize] ➔ [END]
-  tool         ➔ [tool] ➔ [evaluate] ──(route_after_evaluate)──> [answer] | [retry]
-  missing_info ➔ [clarify] ➔ [finalize] ➔ [END]
-  risky        ➔ [risky_action] ➔ [approval] ──(route_after_approval)──> [tool] | [clarify]
-  error        ➔ [retry] ──(route_after_retry)──> [tool] (thử lại) | [dead_letter]
-  [answer] / [clarify] / [dead_letter] ➔ [finalize] ➔ [END]
+START
+  ↓
+intake
+  ↓
+classify
+  ├── simple ───────────────→ answer ──────→ finalize ──→ END
+  │
+  ├── tool ─────────────────→ tool
+  │                            ↓
+  │                         evaluate
+  │                          ├── answer ──→ answer
+  │                          └── retry ────→ retry
+  │
+  ├── missing_info ─────────→ clarify ─────→ finalize ──→ END
+  │
+  ├── risky ────────────────→ risky_action
+  │                            ↓
+  │                         approval
+  │                          ├── tool ─────→ tool
+  │                          └── clarify ──→ clarify
+  │
+  └── error ────────────────→ retry
+                               ├── tool ────→ tool
+                               └── dead_letter
+                                      ↓
+                                   finalize
+                                      ↓
+                                     END
 ```
 
 ### Chức năng chi tiết của các Node:
