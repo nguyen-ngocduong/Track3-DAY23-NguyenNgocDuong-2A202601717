@@ -11,35 +11,35 @@
 Quy trình làm việc được thiết kế dưới dạng một đồ thị trạng thái `StateGraph` hoàn chỉnh bao gồm
 **11 nodes** và **4 conditional edges** điều hướng luồng:
 
-```text
-START
-  ↓
-intake
-  ↓
-classify
-  ├── simple ───────────────→ answer ──────→ finalize ──→ END
-  │
-  ├── tool ─────────────────→ tool
-  │                            ↓
-  │                         evaluate
-  │                          ├── answer ──→ answer
-  │                          └── retry ────→ retry
-  │
-  ├── missing_info ─────────→ clarify ─────→ finalize ──→ END
-  │
-  ├── risky ────────────────→ risky_action
-  │                            ↓
-  │                         approval
-  │                          ├── tool ─────→ tool
-  │                          └── clarify ──→ clarify
-  │
-  └── error ────────────────→ retry
-                               ├── tool ────→ tool
-                               └── dead_letter
-                                      ↓
-                                   finalize
-                                      ↓
-                                     END
+
+```mermaid
+flowchart TD
+    START([START]) --> intake[intake]
+    intake --> classify[classify]
+
+    classify -->|simple| answer[answer]
+    classify -->|tool| tool[tool]
+    classify -->|missing_info| clarify[clarify]
+    classify -->|risky| risky_action[risky_action]
+    classify -->|error| retry[retry]
+
+    answer --> finalize[finalize]
+    clarify --> finalize
+    dead_letter[dead_letter] --> finalize
+    finalize --> END([END])
+
+    tool --> evaluate[evaluate]
+
+    evaluate -->|success| answer
+    evaluate -->|needs_retry| retry
+
+    risky_action --> approval[approval]
+
+    approval -->|approved| tool
+    approval -->|rejected| clarify
+
+    retry -->|attempt < max_attempts| tool
+    retry -->|attempt >= max_attempts| dead_letter
 ```
 
 ### Chức năng chi tiết của các Node:
