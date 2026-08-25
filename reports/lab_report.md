@@ -174,8 +174,10 @@ The graph is compiled with a checkpointer and every run uses a per-scenario `thr
 
 ## 8. Improvement plan
 
-- Productionize the mock tool into real API calls (orders, refunds) with proper
-  idempotency keys so retries are safe.
-- Add a Streamlit approval UI on top of the interrupt/resume flow instead of the CLI.
-- Add tracing/observability (LangSmith) and alerting when `dead_letter` fires.
-- Add a timeout budget per node so a slow LLM cannot stall the whole ticket pipeline.
+- Productionize the mock tool into real API integrations (order databases, payment gateways)
+  with proper idempotency keys and transactional guarantees so retries are safe.
+- Integrate distributed PostgreSQL/Redis checkpointers with connection pooling for
+  high-throughput multi-agent deployments across clustered services.
+- Integrate comprehensive observability and distributed tracing (LangSmith/OpenTelemetry)
+  with automated alerting when `dead_letter` escalations occur.
+- Add dynamic latency/token budget caps per node to enforce SLA response time guarantees.
