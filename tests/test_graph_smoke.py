@@ -11,6 +11,9 @@ import importlib.util
 import os
 
 import pytest
+from dotenv import load_dotenv
+
+load_dotenv()
 
 pytestmark = [
     pytest.mark.skipif(
@@ -18,14 +21,20 @@ pytestmark = [
         reason="langgraph not installed",
     ),
     pytest.mark.skipif(
-        not os.getenv("GEMINI_API_KEY") and not os.getenv("OPENAI_API_KEY") and not os.getenv("ANTHROPIC_API_KEY"),
-        reason="No LLM API key configured (set GEMINI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY)",
+        not os.getenv("GEMINI_API_KEY")
+        and not os.getenv("OPENAI_API_KEY")
+        and not os.getenv("ANTHROPIC_API_KEY")
+        and not os.getenv("GROQ_API_KEY"),
+        reason=(
+            "No LLM API key configured "
+            "(set GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or GROQ_API_KEY)"
+        ),
     ),
 ]
 
-from langgraph_agent_lab.graph import build_graph
-from langgraph_agent_lab.persistence import build_checkpointer
-from langgraph_agent_lab.state import Route, Scenario, initial_state
+from langgraph_agent_lab.graph import build_graph  # noqa: E402
+from langgraph_agent_lab.persistence import build_checkpointer  # noqa: E402
+from langgraph_agent_lab.state import Route, Scenario, initial_state  # noqa: E402
 
 
 @pytest.mark.parametrize(
@@ -38,7 +47,7 @@ from langgraph_agent_lab.state import Route, Scenario, initial_state
         ("Timeout failure while processing", Route.ERROR.value),
     ],
 )
-def test_graph_runs_and_routes_correctly(query, expected_route):
+def test_graph_runs_and_routes_correctly(query: str, expected_route: str) -> None:
     graph = build_graph(checkpointer=build_checkpointer("memory"))
     scenario = Scenario(id="smoke", query=query, expected_route=Route(expected_route))
     state = initial_state(scenario)
@@ -47,7 +56,7 @@ def test_graph_runs_and_routes_correctly(query, expected_route):
     assert result.get("final_answer") or result.get("pending_question")
 
 
-def test_graph_terminates_all_routes():
+def test_graph_terminates_all_routes() -> None:
     """Verify every route reaches finalize node."""
     graph = build_graph(checkpointer=build_checkpointer("memory"))
     queries = [

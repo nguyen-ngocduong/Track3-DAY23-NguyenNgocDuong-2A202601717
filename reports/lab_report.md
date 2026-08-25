@@ -1,52 +1,10 @@
-"""Report generation helper: renders a complete lab report from MetricsReport data."""
-
-from __future__ import annotations
-
-from datetime import date
-from pathlib import Path
-
-from .metrics import MetricsReport
-
-_STUDENT_NAME = "Nguyen Ngoc Duong"
-_STUDENT_ID = "2A202601717"
-
-
-def _summary_table(metrics: MetricsReport) -> str:
-    return (
-        "| Metric | Value |\n"
-        "|---|---:|\n"
-        f"| Total scenarios | {metrics.total_scenarios} |\n"
-        f"| Success rate | {metrics.success_rate:.0%} |\n"
-        f"| Avg nodes visited | {metrics.avg_nodes_visited:.1f} |\n"
-        f"| Total retries | {metrics.total_retries} |\n"
-        f"| Total interrupts | {metrics.total_interrupts} |\n"
-        f"| Resume success | {metrics.resume_success} |\n"
-    )
-
-
-def _scenario_table(metrics: MetricsReport) -> str:
-    rows = [
-        "| Scenario | Expected route | Actual route | Success | Retries | Interrupts | Approval |",
-        "|---|---|---|---:|---:|---:|---:|",
-    ]
-    for item in metrics.scenario_metrics:
-        rows.append(
-            f"| {item.scenario_id} | {item.expected_route} | {item.actual_route or '-'} "
-            f"| {'yes' if item.success else 'no'} | {item.retry_count} | {item.interrupt_count} "
-            f"| {'required' if item.approval_required else '-'} |"
-        )
-    return "\n".join(rows)
-
-
-def render_report(metrics: MetricsReport) -> str:
-    """Render a complete lab report from metrics data."""
-    return f"""# Day 08 Lab Report — LangGraph Support Ticket Agent
+# Day 08 Lab Report — LangGraph Support Ticket Agent
 
 ## 1. Student
 
-- Name: {_STUDENT_NAME}
-- Student ID: {_STUDENT_ID}
-- Date: {date.today().isoformat()}
+- Name: Nguyen Ngoc Duong
+- Student ID: 2A202601717
+- Date: 2026-08-25
 
 ## 2. Architecture
 
@@ -101,11 +59,27 @@ state stays lean while remaining fully auditable and serializable.
 
 ### Summary
 
-{_summary_table(metrics)}
+| Metric | Value |
+|---|---:|
+| Total scenarios | 7 |
+| Success rate | 100% |
+| Avg nodes visited | 6.4 |
+| Total retries | 3 |
+| Total interrupts | 2 |
+| Resume success | True |
+
 
 ### Per-scenario
 
-{_scenario_table(metrics)}
+| Scenario | Expected route | Actual route | Success | Retries | Interrupts | Approval |
+|---|---|---|---:|---:|---:|---:|
+| S01_simple | simple | simple | yes | 0 | 0 | - |
+| S02_tool | tool | tool | yes | 0 | 0 | - |
+| S03_missing | missing_info | missing_info | yes | 0 | 0 | - |
+| S04_risky | risky | risky | yes | 0 | 1 | required |
+| S05_error | error | error | yes | 2 | 0 | - |
+| S06_delete | risky | risky | yes | 0 | 1 | required |
+| S07_dead_letter | error | error | yes | 1 | 0 | - |
 
 ## 5. Failure analysis
 
@@ -161,11 +135,3 @@ The graph is compiled with a checkpointer and every run uses a per-scenario `thr
 - Add a Streamlit approval UI on top of the interrupt/resume flow instead of the CLI.
 - Add tracing/observability (LangSmith) and alerting when `dead_letter` fires.
 - Add a timeout budget per node so a slow LLM cannot stall the whole ticket pipeline.
-"""
-
-
-def write_report(metrics: MetricsReport, output_path: str | Path) -> None:
-    """Write the rendered report to a file."""
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_report(metrics), encoding="utf-8")
